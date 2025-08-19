@@ -646,8 +646,20 @@ html, body {
     print-color-adjust: exact !important;
   }
 
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: auto;
+  }
+
   .pdf-viewer-container {
     height: auto;
+    background: white;
   }
 
   .pdf-sidebar {
@@ -657,17 +669,20 @@ html, body {
   .pdf-document {
     padding: 0;
     display: block;
+    width: 100%;
+    height: auto;
   }
 
   .pdf-page {
-    margin-bottom: 0;
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 10mm;
     box-shadow: none;
-    page-break-after: auto;
+    page-break-after: always;
     page-break-inside: avoid;
-    height: auto;
-    min-height: auto;
-    max-height: none;
     overflow: visible;
+    box-sizing: border-box;
   }
 
   .pdf-page:last-child {
@@ -676,10 +691,12 @@ html, body {
 
   .page-content {
     min-height: auto;
+    height: calc(100vh - 20mm);
   }
 
   .vue-grid-layout {
     min-height: auto;
+    height: 100%;
   }
 
   .page-footer {
