@@ -473,12 +473,16 @@ html, body {
   margin-bottom: 20mm;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   position: relative;
-  padding: 20mm;
+  padding: 20px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page-header {
   margin-bottom: 15mm;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page-content {
@@ -677,7 +681,7 @@ html, body {
     width: 100%;
     height: 100vh;
     margin: 0;
-    padding: 10mm;
+    padding: 20px;
     box-shadow: none;
     page-break-after: always;
     page-break-inside: avoid;
