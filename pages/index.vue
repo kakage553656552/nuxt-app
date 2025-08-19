@@ -2,6 +2,7 @@
   <div>
     <publicPdf
       :layout="layout"
+      :pdf-data="pdfData"
       :col-num="12"
       :row-height="60"
       :is-draggable="true"
@@ -50,7 +51,119 @@ export default {
         { x: 2, y: 0, w: 4, h: 3, i: '1', title: 'Widget 2', content: '这是第二个Widget，可以调整大小和位置' },
         { x: 6, y: 0, w: 3, h: 2, i: '2', title: 'Widget 3', content: '第三个Widget，支持响应式布局' }
       ],
-      nextWidgetId: 3
+      nextWidgetId: 3,
+      pdfData: [
+        {
+          h: 3,
+          i: '40daef5e-130d-460f-abd4-3a8158c0f6ba',
+          w: 12,
+          x: 0,
+          y: 0,
+          id: '1338421359567159298',
+          com: 'pageheadergadget',
+          moved: false,
+          static: true,
+          slicers: []
+        },
+        {
+          data: [
+            {
+              h: 4,
+              i: 'c8bf797f-7649-4063-80cf-24c22be79846',
+              w: 4,
+              x: 0,
+              y: 0,
+              id: '1352302658778537986',
+              com: 'cardnumbergadget',
+              name: 'Open Tickets',
+              moved: false,
+              isCompany: false,
+              allowPaging: null,
+              businessType: 'Template',
+              integrationList: [
+                {
+                  name: 'ConnectWise Manage - API',
+                  code: 'CW',
+                  icon: 'https://oss.mspbots.ai/files/integration_logo/connectwise_manage_logo.png'
+                }
+              ],
+              isHidden: 0,
+              integrationCode: ['CW'],
+              slicers: []
+            },
+            {
+              h: 4,
+              i: 'card-2',
+              w: 4,
+              x: 4,
+              y: 0,
+              com: 'cardnumbergadget',
+              name: 'Closed Tickets',
+              businessType: 'Standard',
+              integrationList: [
+                {
+                  name: 'ConnectWise Manage - API',
+                  code: 'CW',
+                  icon: 'https://oss.mspbots.ai/files/integration_logo/connectwise_manage_logo.png'
+                }
+              ]
+            },
+            {
+              h: 4,
+              i: 'card-3',
+              w: 4,
+              x: 8,
+              y: 0,
+              com: 'cardnumbergadget',
+              name: 'Revenue',
+              businessType: 'Premium',
+              integrationList: [
+                {
+                  name: 'QuickBooks - API',
+                  code: 'QB',
+                  icon: 'https://oss.mspbots.ai/files/integration_logo/quickbooks_logo.png'
+                }
+              ]
+            }
+          ],
+          slicers: []
+        },
+        {
+          data: [
+            {
+              h: 6,
+              i: 'chart-1',
+              w: 8,
+              x: 0,
+              y: 0,
+              com: 'cardnumbergadget',
+              name: 'Monthly Revenue Trend',
+              businessType: 'Analytics'
+            },
+            {
+              h: 3,
+              i: 'card-4',
+              w: 4,
+              x: 8,
+              y: 0,
+              com: 'cardnumbergadget',
+              name: 'Active Projects',
+              businessType: 'Standard'
+            },
+            {
+              h: 3,
+              i: 'card-5',
+              w: 4,
+              x: 8,
+              y: 3,
+              com: 'cardnumbergadget',
+              name: 'Team Members',
+              businessType: 'Standard'
+            }
+          ],
+          slicers: []
+        }
+      ]
     }
   },
   mounted () {

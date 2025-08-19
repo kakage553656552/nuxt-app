@@ -1,57 +1,104 @@
 <template>
-  <div class="vue-grid-layout">
-    <div
-      v-for="item in layout"
-      :key="item.i"
-      :style="getItemStyle(item)"
-      class="vue-grid-item"
-      :class="{
-        'vue-grid-item--dragging': isDragging && draggedItem && draggedItem.i === item.i,
-        'vue-grid-item--resizing': isResizing && resizingItem && resizingItem.i === item.i
-      }"
-      :draggable="isDraggable"
-      @dragstart="onDragStart($event, item)"
-      @dragend="onDragEnd"
-    >
-      <div class="vue-grid-item-content">
-        <slot
-          :item="item"
-          :index="layout.indexOf(item)"
-        >
-          <div class="default-widget">
-            <div class="widget-header">
-              <h4>{{ item.title || `Item ${item.i}` }}</h4>
-              <button
-                v-if="isResizable"
-                class="resize-handle"
-                @mousedown="startResize($event, item)"
-              >
-                ⤡
-              </button>
+  <div class="pdf-viewer-container">
+    <div class="pdf-document">
+      <!-- PDF页面渲染 - 连续滚动布局 -->
+      <div
+        v-for="(page, pageIndex) in pdfPages"
+        :id="`page-${pageIndex}`"
+        :key="pageIndex"
+        class="pdf-page"
+      >
+        <!-- 页面头部只在第一页显示 -->
+        <div v-if="pageIndex === 0 && headerData" class="page-header">
+          <PageHeaderGadget :item="headerData" />
+        </div>
+
+        <!-- 页面内容区域 -->
+        <div class="page-content">
+          <div v-if="page.length > 0" class="vue-grid-layout">
+            <div
+              v-for="item in page"
+              :key="item.i"
+              :style="getItemStyle(item)"
+              class="vue-grid-item"
+              :class="{
+                'vue-grid-item--dragging': isDragging && draggedItem && draggedItem.i === item.i,
+                'vue-grid-item--resizing': isResizing && resizingItem && resizingItem.i === item.i,
+                'vue-grid-item--static': item.static
+              }"
+              :draggable="isDraggable && !item.static"
+              @dragstart="onDragStart($event, item)"
+              @dragend="onDragEnd"
+            >
+              <div class="vue-grid-item-content">
+                <slot
+                  :item="item"
+                  :index="getItemIndex(item)"
+                >
+                  <component
+                    :is="getComponentName(item.com)"
+                    :item="item"
+                  />
+                </slot>
+              </div>
             </div>
-            <div class="widget-body">
-              <p>{{ item.content || `Widget content ${item.i}` }}</p>
-            </div>
+
+            <div
+              v-if="dragPlaceholder.visible"
+              :style="dragPlaceholder.style"
+              class="vue-grid-placeholder"
+            />
           </div>
-        </slot>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="page-footer">
+          <div class="page-info">
+            <span class="page-number">{{ pageIndex + 1 }}</span>
+            <span class="total-pages">/ {{ pdfPages.length }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div
-      v-if="dragPlaceholder.visible"
-      :style="dragPlaceholder.style"
-      class="vue-grid-placeholder"
-    />
+    <!-- 侧边页面缩略图导航 -->
+    <div v-if="pdfPages.length > 1" class="pdf-sidebar">
+      <div class="sidebar-header">
+        <h4>页面</h4>
+      </div>
+      <div class="page-thumbnails">
+        <div
+          v-for="(page, index) in pdfPages"
+          :key="index"
+          class="page-thumbnail"
+          :class="{ 'active': isPageInView(index) }"
+          @click="scrollToPage(index)"
+        >
+          <div class="thumbnail-preview">
+            <span class="thumbnail-number">{{ index + 1 }}</span>
+          </div>
+          <span class="thumbnail-label">第{{ index + 1 }}页</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
   name: 'PublicPdf',
+  components: {
+    PageHeaderGadget: () => import('./PageHeaderGadget.vue'),
+    CardNumberGadget: () => import('./CardNumberGadget.vue')
+  },
   props: {
     layout: {
       type: Array,
       required: true
+    },
+    pdfData: {
+      type: Array,
+      default: () => []
     },
     colNum: {
       type: Number,
@@ -115,15 +162,21 @@ export default {
       dragPlaceholder: {
         visible: false,
         style: {}
-      }
+      },
+      currentPage: 0,
+      visiblePages: []
     }
   },
   computed: {
     colWidth () {
-      return (this.containerWidth - (this.colNum + 1) * this.margin[0]) / this.colNum
+      // A4页面宽度为210mm，减去页边距
+      const pageWidth = 210 - 40 // 40mm页边距
+      return (pageWidth - (this.colNum + 1) * this.margin[0]) / this.colNum
     },
     currentBreakpoint () {
-      if (!this.responsive) { return 'lg' }
+      if (!this.responsive) {
+        return 'lg'
+      }
       const width = this.containerWidth
       const breakpoints = this.breakpoints
       return Object.keys(breakpoints)
@@ -132,6 +185,37 @@ export default {
     },
     currentCols () {
       return this.responsive ? this.cols[this.currentBreakpoint] : this.colNum
+    },
+    headerData () {
+      if (this.pdfData.length > 0) {
+        const firstItem = this.pdfData[0]
+        if (firstItem.com === 'pageheadergadget') {
+          return firstItem
+        }
+      }
+      return null
+    },
+    pdfPages () {
+      if (this.pdfData.length === 0) {
+        return [this.layout]
+      }
+
+      const pages = []
+      const headerIndex = this.pdfData.findIndex(item => item.com === 'pageheadergadget')
+
+      // 跳过header，处理其他页面数据
+      for (let i = headerIndex + 1; i < this.pdfData.length; i++) {
+        const pageData = this.pdfData[i]
+        if (pageData.data && Array.isArray(pageData.data)) {
+          pages.push(pageData.data)
+        } else if (pageData.i) {
+          // 单个item
+          if (pages.length === 0) { pages.push([]) }
+          pages[pages.length - 1].push(pageData)
+        }
+      }
+
+      return pages.length > 0 ? pages : [this.layout]
     }
   },
   mounted () {
@@ -139,6 +223,7 @@ export default {
     window.addEventListener('resize', this.updateContainerWidth)
     document.addEventListener('mousemove', this.onMouseMove)
     document.addEventListener('mouseup', this.onMouseUp)
+    this.setupScrollObserver()
   },
   beforeDestroy () {
     window.removeEventListener('resize', this.updateContainerWidth)
@@ -148,7 +233,8 @@ export default {
   methods: {
     updateContainerWidth () {
       if (this.$el) {
-        this.containerWidth = this.$el.offsetWidth
+        // A4页面宽度210mm，转换为像素（约等于794px在96dpi下）
+        this.containerWidth = 794
       }
     },
 
@@ -157,9 +243,11 @@ export default {
       const rowHeight = this.rowHeight
       const margin = this.margin
 
-      const x = item.x * colWidth + (item.x + 1) * margin[0]
+      // 转换mm为像素（1mm ≈ 3.78px 在96dpi下）
+      const mmToPx = 3.78
+      const x = item.x * colWidth * mmToPx + (item.x + 1) * margin[0]
       const y = item.y * rowHeight + (item.y + 1) * margin[1]
-      const width = item.w * colWidth + (item.w - 1) * margin[0]
+      const width = item.w * colWidth * mmToPx + (item.w - 1) * margin[0]
       const height = item.h * rowHeight + (item.h - 1) * margin[1]
 
       const style = {
@@ -246,8 +334,9 @@ export default {
       const colWidth = this.colWidth
       const rowHeight = this.rowHeight
       const margin = this.margin
+      const mmToPx = 3.78
 
-      const newX = Math.max(0, Math.round((event.clientX - containerRect.left - this.dragOffset.x) / (colWidth + margin[0])))
+      const newX = Math.max(0, Math.round((event.clientX - containerRect.left - this.dragOffset.x) / ((colWidth * mmToPx) + margin[0])))
       const newY = Math.max(0, Math.round((event.clientY - containerRect.top - this.dragOffset.y) / (rowHeight + margin[1])))
 
       if (newX !== this.draggedItem.x || newY !== this.draggedItem.y) {
@@ -263,8 +352,9 @@ export default {
       const colWidth = this.colWidth
       const rowHeight = this.rowHeight
       const margin = this.margin
+      const mmToPx = 3.78
 
-      const newW = Math.max(1, this.resizeStartSize.w + Math.round(deltaX / (colWidth + margin[0])))
+      const newW = Math.max(1, this.resizeStartSize.w + Math.round(deltaX / ((colWidth * mmToPx) + margin[0])))
       const newH = Math.max(1, this.resizeStartSize.h + Math.round(deltaY / (rowHeight + margin[1])))
 
       this.resizingItem.w = Math.min(newW, this.currentCols - this.resizingItem.x)
@@ -273,6 +363,49 @@ export default {
 
     updatePlaceholder (item) {
       this.dragPlaceholder.style = this.getItemStyle(item)
+    },
+
+    getComponentName (componentType) {
+      const componentMap = {
+        pageheadergadget: 'PageHeaderGadget',
+        cardnumbergadget: 'CardNumberGadget'
+      }
+      return componentMap[componentType] || 'div'
+    },
+
+    getItemIndex (item) {
+      const currentPageData = this.pdfPages[this.currentPage]
+      return currentPageData.indexOf(item)
+    },
+
+    // 滚动相关方法
+    setupScrollObserver () {
+      const observer = new IntersectionObserver((entries) => {
+        this.visiblePages = entries
+          .filter(entry => entry.isIntersecting)
+          .map(entry => parseInt(entry.target.id.replace('page-', '')))
+      }, {
+        threshold: 0.5
+      })
+
+      this.$nextTick(() => {
+        const pages = document.querySelectorAll('.pdf-page')
+        pages.forEach(page => observer.observe(page))
+      })
+    },
+
+    scrollToPage (pageIndex) {
+      const pageElement = document.getElementById(`page-${pageIndex}`)
+      if (pageElement) {
+        pageElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        })
+      }
+    },
+
+    isPageInView (pageIndex) {
+      return this.visiblePages.includes(pageIndex)
     },
 
     // 公开的API方法
@@ -310,12 +443,151 @@ export default {
 </script>
 
 <style scoped>
+.pdf-viewer-container {
+  display: flex;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+.pdf-document {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pdf-page {
+  width: 210mm;
+  min-height: 297mm;
+  background: white;
+  margin-bottom: 20mm;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+  padding: 20mm;
+  box-sizing: border-box;
+  page-break-after: always;
+}
+
+.page-header {
+  margin-bottom: 15mm;
+}
+
+.page-content {
+  min-height: 220mm;
+  position: relative;
+}
+
 .vue-grid-layout {
   position: relative;
-  background: #eee;
+  width: 100%;
+  min-height: 200mm;
+}
+
+.page-footer {
+  position: absolute;
+  bottom: 10mm;
+  left: 20mm;
+  right: 20mm;
+  text-align: center;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 5mm;
+}
+
+.page-info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  font-size: 10pt;
+  color: #6b7280;
+}
+
+.page-number {
+  font-weight: 600;
+}
+
+.total-pages {
+  font-weight: 400;
+}
+
+/* 侧边栏样式 */
+.pdf-sidebar {
+  width: 200px;
+  background: white;
+  border-left: 1px solid #e5e7eb;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.sidebar-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.page-thumbnails {
+  padding: 16px 12px;
+}
+
+.page-thumbnail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  margin-bottom: 12px;
   border-radius: 8px;
-  padding: 10px;
-  min-height: 400px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.page-thumbnail:hover {
+  background: #f3f4f6;
+}
+
+.page-thumbnail.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.thumbnail-preview {
+  width: 40px;
+  height: 56px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.thumbnail-number {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.thumbnail-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.page-thumbnail.active .thumbnail-number,
+.page-thumbnail.active .thumbnail-label {
+  color: #3b82f6;
 }
 
 .vue-grid-item {
@@ -341,6 +613,14 @@ export default {
   z-index: 999;
 }
 
+.vue-grid-item--static {
+  cursor: default !important;
+}
+
+.vue-grid-item--static:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
 .vue-grid-item-content {
   height: 100%;
   overflow: hidden;
@@ -353,53 +633,45 @@ export default {
   z-index: 2;
 }
 
-.default-widget {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+/* 打印样式 */
+@media print {
+  .pdf-viewer-container {
+    height: auto;
+  }
+
+  .pdf-sidebar {
+    display: none;
+  }
+
+  .pdf-document {
+    padding: 0;
+  }
+
+  .pdf-page {
+    margin-bottom: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
 }
 
-.widget-header {
-  background: #409eff;
-  color: white;
-  padding: 8px 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.widget-header h4 {
-  margin: 0;
-  font-size: 14px;
-  flex: 1;
-}
-
-.resize-handle {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 14px;
-  cursor: se-resize;
-  padding: 2px 6px;
-  border-radius: 3px;
-  transition: background-color 0.2s;
-}
-
-.resize-handle:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.widget-body {
-  flex: 1;
-  padding: 12px;
-  font-size: 12px;
-  color: #666;
-  overflow: auto;
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .pdf-page {
+    width: 90vw;
+    min-height: calc(90vw * 1.414);
+    padding: 5vw;
+  }
 }
 
 @media (max-width: 768px) {
-  .vue-grid-layout {
-    min-height: 300px;
+  .pdf-sidebar {
+    display: none;
+  }
+
+  .pdf-page {
+    width: 95vw;
+    min-height: calc(95vw * 1.414);
+    padding: 4vw;
   }
 }
 </style>
