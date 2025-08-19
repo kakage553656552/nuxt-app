@@ -641,6 +641,11 @@ html, body {
 
 /* 打印样式 */
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .pdf-viewer-container {
     height: auto;
   }
