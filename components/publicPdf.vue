@@ -52,12 +52,12 @@
         </div>
 
         <!-- 页脚 -->
-        <div class="page-footer">
+        <!-- <div class="page-footer">
           <div class="page-info">
             <span class="page-number">{{ pageIndex + 1 }}</span>
             <span class="total-pages">/ {{ pdfPages.length }}</span>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -442,6 +442,13 @@ export default {
 }
 </script>
 
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+}
+</style>
+
 <style scoped>
 .pdf-viewer-container {
   display: flex;
@@ -468,7 +475,6 @@ export default {
   position: relative;
   padding: 20mm;
   box-sizing: border-box;
-  page-break-after: always;
 }
 
 .page-header {
@@ -645,12 +651,35 @@ export default {
 
   .pdf-document {
     padding: 0;
+    display: block;
   }
 
   .pdf-page {
     margin-bottom: 0;
     box-shadow: none;
-    page-break-after: always;
+    page-break-after: auto;
+    page-break-inside: avoid;
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .pdf-page:last-child {
+    page-break-after: avoid;
+  }
+
+  .page-content {
+    min-height: auto;
+  }
+
+  .vue-grid-layout {
+    min-height: auto;
+  }
+
+  .page-footer {
+    position: relative;
+    margin-top: 20mm;
   }
 }
 

@@ -27,7 +27,7 @@
       </template>
     </publicPdf>
 
-    <div class="control-panel">
+    <!-- <div class="control-panel">
       <el-button type="primary" @click="addWidget">
         添加Widget
       </el-button>
@@ -37,7 +37,7 @@
       <el-button type="info" @click="resetLayout">
         重置布局
       </el-button>
-    </div>
+    </div> -->
   </div>
 </template>
 
