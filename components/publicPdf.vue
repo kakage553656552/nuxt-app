@@ -8,10 +8,7 @@
         :key="pageIndex"
         class="pdf-page"
       >
-        <!-- 页面头部只在第一页显示 -->
-        <div v-if="pageIndex === 0 && headerData" class="page-header">
-          <PageHeaderGadget :item="headerData" />
-        </div>
+
 
         <!-- 页面内容区域 -->
         <div class="page-content">
@@ -92,10 +89,6 @@ export default {
     CardNumberGadget: () => import('./CardNumberGadget.vue')
   },
   props: {
-    layout: {
-      type: Array,
-      required: true
-    },
     pdfData: {
       type: Array,
       default: () => []
@@ -171,7 +164,7 @@ export default {
     colWidth () {
       // A4页面宽度为210mm，减去页边距
       const pageWidth = 210 - 40 // 40mm页边距
-      return (pageWidth - (this.colNum + 1) * this.margin[0]) / this.colNum
+      return pageWidth / this.colNum
     },
     currentBreakpoint () {
       if (!this.responsive) {
@@ -186,36 +179,25 @@ export default {
     currentCols () {
       return this.responsive ? this.cols[this.currentBreakpoint] : this.colNum
     },
-    headerData () {
-      if (this.pdfData.length > 0) {
-        const firstItem = this.pdfData[0]
-        if (firstItem.com === 'pageheadergadget') {
-          return firstItem
-        }
-      }
-      return null
-    },
+
     pdfPages () {
       if (this.pdfData.length === 0) {
-        return [this.layout]
+        return []
       }
 
       const pages = []
-      const headerIndex = this.pdfData.findIndex(item => item.com === 'pageheadergadget')
-
-      // 跳过header，处理其他页面数据
-      for (let i = headerIndex + 1; i < this.pdfData.length; i++) {
+      
+      for (let i = 0; i < this.pdfData.length; i++) {
         const pageData = this.pdfData[i]
         if (pageData.data && Array.isArray(pageData.data)) {
           pages.push(pageData.data)
         } else if (pageData.i) {
-          // 单个item
           if (pages.length === 0) { pages.push([]) }
           pages[pages.length - 1].push(pageData)
         }
       }
 
-      return pages.length > 0 ? pages : [this.layout]
+      return pages
     }
   },
   mounted () {
@@ -245,10 +227,10 @@ export default {
 
       // 转换mm为像素（1mm ≈ 3.78px 在96dpi下）
       const mmToPx = 3.78
-      const x = item.x * colWidth * mmToPx + (item.x + 1) * margin[0]
-      const y = item.y * rowHeight + (item.y + 1) * margin[1]
-      const width = item.w * colWidth * mmToPx + (item.w - 1) * margin[0]
-      const height = item.h * rowHeight + (item.h - 1) * margin[1]
+      const x = item.x * (colWidth * mmToPx + margin[0])
+      const y = item.y * (rowHeight + margin[1])
+      const width = item.w * (colWidth * mmToPx + margin[0]) - margin[0]
+      const height = item.h * (rowHeight + margin[1]) - margin[1]
 
       const style = {
         left: x + 'px',
@@ -287,16 +269,16 @@ export default {
       this.dragPlaceholder.visible = true
       this.updatePlaceholder(item)
 
-      this.$emit('layout-ready', this.layout)
-      this.$emit('layout-before-mount', this.layout)
-      this.$emit('layout-mounted', this.layout)
+      this.$emit('layout-ready', this.pdfPages)
+      this.$emit('layout-before-mount', this.pdfPages)
+      this.$emit('layout-mounted', this.pdfPages)
     },
 
     onDragEnd () {
       this.isDragging = false
       this.draggedItem = null
       this.dragPlaceholder.visible = false
-      this.$emit('layout-updated', this.layout)
+      this.$emit('layout-updated', this.pdfPages)
     },
 
     startResize (event, item) {
@@ -325,7 +307,7 @@ export default {
       if (this.isResizing) {
         this.isResizing = false
         this.resizingItem = null
-        this.$emit('layout-updated', this.layout)
+        this.$emit('layout-updated', this.pdfPages)
       }
     },
 
@@ -336,7 +318,7 @@ export default {
       const margin = this.margin
       const mmToPx = 3.78
 
-      const newX = Math.max(0, Math.round((event.clientX - containerRect.left - this.dragOffset.x) / ((colWidth * mmToPx) + margin[0])))
+      const newX = Math.max(0, Math.round((event.clientX - containerRect.left - this.dragOffset.x) / (colWidth * mmToPx + margin[0])))
       const newY = Math.max(0, Math.round((event.clientY - containerRect.top - this.dragOffset.y) / (rowHeight + margin[1])))
 
       if (newX !== this.draggedItem.x || newY !== this.draggedItem.y) {
@@ -354,7 +336,7 @@ export default {
       const margin = this.margin
       const mmToPx = 3.78
 
-      const newW = Math.max(1, this.resizeStartSize.w + Math.round(deltaX / ((colWidth * mmToPx) + margin[0])))
+      const newW = Math.max(1, this.resizeStartSize.w + Math.round(deltaX / (colWidth * mmToPx + margin[0])))
       const newH = Math.max(1, this.resizeStartSize.h + Math.round(deltaY / (rowHeight + margin[1])))
 
       this.resizingItem.w = Math.min(newW, this.currentCols - this.resizingItem.x)
@@ -410,33 +392,19 @@ export default {
 
     // 公开的API方法
     addItem (item) {
-      const newLayout = [...this.layout, item]
-      this.$emit('layout-updated', newLayout)
+      this.$emit('item-added', item)
     },
 
     removeItem (itemId) {
-      const newLayout = this.layout.filter(item => item.i !== itemId)
-      this.$emit('layout-updated', newLayout)
+      this.$emit('item-removed', itemId)
     },
 
     moveItem (itemId, x, y) {
-      const newLayout = this.layout.map((item) => {
-        if (item.i === itemId) {
-          return { ...item, x, y }
-        }
-        return item
-      })
-      this.$emit('layout-updated', newLayout)
+      this.$emit('item-moved', { itemId, x, y })
     },
 
     resizeItem (itemId, w, h) {
-      const newLayout = this.layout.map((item) => {
-        if (item.i === itemId) {
-          return { ...item, w, h }
-        }
-        return item
-      })
-      this.$emit('layout-updated', newLayout)
+      this.$emit('item-resized', { itemId, w, h })
     }
   }
 }
@@ -478,12 +446,7 @@ html, body {
   overflow: hidden;
 }
 
-.page-header {
-  margin-bottom: 15mm;
-  width: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-}
+
 
 .page-content {
   min-height: 220mm;

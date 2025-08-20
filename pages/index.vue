@@ -1,10 +1,9 @@
 <template>
   <div>
     <publicPdf
-      :layout="layout"
       :pdf-data="pdfData"
       :col-num="12"
-      :row-height="60"
+      :row-height="10"
       :is-draggable="true"
       :is-resizable="true"
       :vertical-compact="true"
@@ -14,15 +13,16 @@
     >
       <template #default="{ item }">
         <div class="custom-widget">
-          <div class="widget-header">
+          <!-- <div class="widget-header">
             <h4>{{ item.title }}</h4>
             <button class="remove-btn" @click="removeWidget(item.i)">
               ×
             </button>
-          </div>
-          <div class="widget-body">
+          </div> -->
+          <!-- <div class="">
             <p>{{ item.content }}</p>
-          </div>
+          </div> -->
+          {{item.name}}222
         </div>
       </template>
     </publicPdf>
@@ -46,33 +46,27 @@ export default {
   name: 'IndexPage',
   data () {
     return {
-      layout: [
-        { x: 0, y: 0, w: 2, h: 2, i: '0', title: 'Widget 1', content: '这是第一个可拖拽的Widget组件' },
-        { x: 2, y: 0, w: 4, h: 3, i: '1', title: 'Widget 2', content: '这是第二个Widget，可以调整大小和位置' },
-        { x: 6, y: 0, w: 3, h: 2, i: '2', title: 'Widget 3', content: '第三个Widget，支持响应式布局' }
-      ],
-      nextWidgetId: 3,
       pdfData: [
         {
-          h: 3,
-          i: '40daef5e-130d-460f-abd4-3a8158c0f6ba',
-          w: 12,
-          x: 0,
-          y: 0,
-          id: '1338421359567159298',
-          com: 'pageheadergadget',
-          moved: false,
-          static: true,
-          slicers: []
-        },
-        {
           data: [
+            {
+              h: 3,
+              i: '40daef5e-130d-460f-abd4-3a8158c0f6ba',
+              w: 12,
+              x: 0,
+              y: 0,
+              id: '1338421359567159298',
+              com: 'pageheadergadget',
+              moved: false,
+              static: true,
+              slicers: []
+            },
             {
               h: 4,
               i: 'c8bf797f-7649-4063-80cf-24c22be79846',
               w: 4,
               x: 0,
-              y: 0,
+              y: 3,
               id: '1352302658778537986',
               com: 'cardnumbergadget',
               name: 'Open Tickets',
@@ -96,7 +90,7 @@ export default {
               i: 'card-2',
               w: 4,
               x: 4,
-              y: 0,
+              y: 3,
               com: 'cardnumbergadget',
               name: 'Closed Tickets',
               businessType: 'Standard',
@@ -113,7 +107,7 @@ export default {
               i: 'card-3',
               w: 4,
               x: 8,
-              y: 0,
+              y: 3,
               com: 'cardnumbergadget',
               name: 'Revenue',
               businessType: 'Premium',
@@ -167,47 +161,9 @@ export default {
     }
   },
   mounted () {
-    const savedLayout = localStorage.getItem('vueGridLayout')
-    if (savedLayout) {
-      this.layout = JSON.parse(savedLayout)
-      this.nextWidgetId = Math.max(...this.layout.map(item => parseInt(item.i))) + 1
-    }
   },
   methods: {
     onLayoutUpdated (newLayout) {
-      this.layout = newLayout
-    },
-
-    addWidget () {
-      const newWidget = {
-        x: 0,
-        y: 0,
-        w: 2,
-        h: 2,
-        i: this.nextWidgetId.toString(),
-        title: `Widget ${this.nextWidgetId + 1}`,
-        content: `新添加的Widget ${this.nextWidgetId + 1}`
-      }
-      this.layout.push(newWidget)
-      this.nextWidgetId++
-    },
-
-    removeWidget (widgetId) {
-      this.layout = this.layout.filter(item => item.i !== widgetId)
-    },
-
-    saveLayout () {
-      localStorage.setItem('vueGridLayout', JSON.stringify(this.layout))
-      this.$message.success('布局已保存')
-    },
-
-    resetLayout () {
-      this.layout = [
-        { x: 0, y: 0, w: 2, h: 2, i: '0', title: 'Widget 1', content: '这是第一个可拖拽的Widget组件' },
-        { x: 2, y: 0, w: 4, h: 3, i: '1', title: 'Widget 2', content: '这是第二个Widget，可以调整大小和位置' },
-        { x: 6, y: 0, w: 3, h: 2, i: '2', title: 'Widget 3', content: '第三个Widget，支持响应式布局' }
-      ]
-      this.nextWidgetId = 3
     }
   }
 }
@@ -224,9 +180,8 @@ export default {
 }
 
 .custom-widget {
+  width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 
 .widget-header {

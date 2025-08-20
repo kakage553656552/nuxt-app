@@ -1,24 +1,5 @@
 <template>
   <div class="card-number-gadget">
-    <div class="card-header">
-      <div class="card-title">
-        <h3>{{ item.name || 'Metric Card' }}</h3>
-        <div v-if="integrationInfo" class="integration-info">
-          <img
-            :src="integrationInfo.icon"
-            :alt="integrationInfo.name"
-            class="integration-icon"
-          >
-          <span class="integration-name">{{ integrationInfo.name }}</span>
-        </div>
-      </div>
-      <div class="card-actions">
-        <button class="action-btn">
-          ⋯
-        </button>
-      </div>
-    </div>
-
     <div class="card-content">
       <div class="metric-display">
         <div class="metric-value">
@@ -40,15 +21,6 @@
         <div class="trend-label">
           vs last period
         </div>
-      </div>
-    </div>
-
-    <div class="card-footer">
-      <div class="business-type">
-        <span class="type-badge">{{ item.businessType || 'Standard' }}</span>
-      </div>
-      <div class="last-updated">
-        Updated {{ formatTime(lastUpdated) }}
       </div>
     </div>
   </div>
@@ -126,58 +98,13 @@ export default {
   transform: translateY(-2px);
 }
 
-.card-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f3f4f6;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.card-title h3 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.integration-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.integration-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-}
-
-.integration-name {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.action-btn {
-  background: none;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.action-btn:hover {
-  background: #f3f4f6;
-}
-
 .card-content {
   flex: 1;
   padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  height: 100%;
 }
 
 .metric-display {
@@ -231,29 +158,7 @@ export default {
   color: #9ca3af;
 }
 
-.card-footer {
-  padding: 12px 20px;
-  background: #f9fafb;
-  border-top: 1px solid #f3f4f6;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
 
-.type-badge {
-  background: #e0e7ff;
-  color: #3730a3;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.last-updated {
-  font-size: 11px;
-  color: #9ca3af;
-}
 
 @media (max-width: 480px) {
   .metric-value {
@@ -262,17 +167,6 @@ export default {
 
   .card-content {
     padding: 16px;
-  }
-
-  .card-header {
-    padding: 12px 16px;
-  }
-
-  .card-footer {
-    padding: 8px 16px;
-    flex-direction: column;
-    gap: 4px;
-    align-items: flex-start;
   }
 }
 </style>
